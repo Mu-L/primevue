@@ -32,6 +32,10 @@ interface PrimeVueLocaleAriaOptions {
     moveTop?: string;
     moveDown?: string;
     moveBottom?: string;
+    moveToTarget?: string;
+    moveToSource?: string;
+    moveAllToTarget?: string;
+    moveAllToSource?: string;
     pageLabel?: string;
     firstPageLabel?: string;
     lastPageLabel?: string;
@@ -52,6 +56,15 @@ interface PrimeVueLocaleAriaOptions {
     editRow?: string;
     saveEdit?: string;
     cancelEdit?: string;
+    listView?: string;
+    gridView?: string;
+    slide?: string;
+    slideNumber?: string;
+    zoomImage?: string;
+    zoomIn?: string;
+    zoomOut?: string;
+    rotateRight?: string;
+    rotateLeft?: string;
 }
 
 interface PrimeVueLocaleOptions {

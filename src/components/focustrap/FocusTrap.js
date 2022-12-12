@@ -1,90 +1,112 @@
-import { DomHandler } from 'primevue/utils';
+import { DomHandler, ObjectUtils } from 'primevue/utils';
 
-let element,
-    firstVNode,
-    lastVNode,
-    shiftKey = false;
+function bind(el, binding) {
+    const { onFocusIn, onFocusOut } = binding.value || {};
 
-function firstHiddenFocus() {
-    if (shiftKey) {
-        lastVNode.focus();
-    } else {
-        const firstFocusableEl = DomHandler.getFirstFocusableElement(element, ':not(.p-hidden-focusable)');
+    el.$_pfocustrap_mutationobserver = new MutationObserver((mutationList) => {
+        mutationList.forEach((mutation) => {
+            if (mutation.type === 'childList' && !el.contains(document.activeElement)) {
+                const findNextFocusableElement = (el) => {
+                    const focusableElement = DomHandler.isFocusableElement(el) ? el : DomHandler.getFirstFocusableElement(el);
 
-        DomHandler.focus(firstFocusableEl);
-    }
-}
+                    return ObjectUtils.isNotEmpty(focusableElement) ? focusableElement : findNextFocusableElement(el.nextSibling);
+                };
 
-function lastHiddenFocus() {
-    if (shiftKey) {
-        const lastFocusableEl = DomHandler.getLastFocusableElement(element, ':not(.p-hidden-focusable)');
+                DomHandler.focus(findNextFocusableElement(mutation.nextSibling));
+            }
+        });
+    });
 
-        DomHandler.focus(lastFocusableEl);
-    } else {
-        firstVNode.focus();
-    }
-}
+    el.$_pfocustrap_mutationobserver.disconnect();
+    el.$_pfocustrap_mutationobserver.observe(el, {
+        childList: true
+    });
 
-function createHiddenElement(callback) {
-    const el = document.createElement('span');
+    el.$_pfocustrap_focusinlistener = (event) => onFocusIn && onFocusIn(event);
+    el.$_pfocustrap_focusoutlistener = (event) => onFocusOut && onFocusOut(event);
 
-    el.classList = 'p-hidden-accessible p-hidden-focusable';
-    el.tabIndex = '0';
-    el.setAttribute('aria-hidden', 'true');
-    el.setAttribute('role', 'presentation');
-    el.addEventListener('focus', callback);
-
-    return el;
-}
-
-function createHiddenElements(el) {
-    firstVNode = createHiddenElement(firstHiddenFocus);
-    lastVNode = createHiddenElement(lastHiddenFocus);
-
-    el.prepend(firstVNode);
-    el.append(lastVNode);
-}
-
-function bind(el) {
-    el.$_pfocustrap_keydownlistener = (e) => {
-        if (e.code === 'Tab') {
-            shiftKey = e.shiftKey;
-        }
-    };
-
-    el.addEventListener('keydown', el.$_pfocustrap_keydownlistener);
+    el.addEventListener('focusin', el.$_pfocustrap_focusinlistener);
+    el.addEventListener('focusout', el.$_pfocustrap_focusoutlistener);
 }
 
 function unbind(el) {
-    if (el.$_pfocustrap_keydownlistener) {
-        el.removeEventListener('keydown', el.$_pfocustrap_keydownlistener);
-        el.$_pfocustrap_keydownlistener = null;
-    }
+    el.$_pfocustrap_mutationobserver && el.$_pfocustrap_mutationobserver.disconnect();
+    el.$_pfocustrap_focusinlistener && el.removeEventListener('focusin', el.$_pfocustrap_focusinlistener) && (el.$_pfocustrap_focusinlistener = null);
+    el.$_pfocustrap_focusoutlistener && el.removeEventListener('focusout', el.$_pfocustrap_focusoutlistener) && (el.$_pfocustrap_focusoutlistener = null);
+}
+
+function autoFocus(el, binding) {
+    const { autoFocusSelector = '', firstFocusableSelector = '', autoFocus = false } = binding.value || {};
+    let focusableElement = DomHandler.getFirstFocusableElement(el, `[autofocus]:not(.p-hidden-focusable)${autoFocusSelector}`);
+
+    autoFocus && !focusableElement && (focusableElement = DomHandler.getFirstFocusableElement(el, `:not(.p-hidden-focusable)${firstFocusableSelector}`));
+    DomHandler.focus(focusableElement);
+}
+
+function onFirstHiddenElementFocus(event) {
+    const { currentTarget, relatedTarget } = event;
+    const focusableElement =
+        relatedTarget === currentTarget.$_pfocustrap_lasthiddenfocusableelement
+            ? DomHandler.getFirstFocusableElement(currentTarget.parentElement, `:not(.p-hidden-focusable)${currentTarget.$_pfocustrap_focusableselector}`)
+            : currentTarget.$_pfocustrap_lasthiddenfocusableelement;
+
+    DomHandler.focus(focusableElement);
+}
+
+function onLastHiddenElementFocus(event) {
+    const { currentTarget, relatedTarget } = event;
+    const focusableElement =
+        relatedTarget === currentTarget.$_pfocustrap_firsthiddenfocusableelement
+            ? DomHandler.getLastFocusableElement(currentTarget.parentElement, `:not(.p-hidden-focusable)${currentTarget.$_pfocustrap_focusableselector}`)
+            : currentTarget.$_pfocustrap_firsthiddenfocusableelement;
+
+    DomHandler.focus(focusableElement);
+}
+
+function createHiddenFocusableElements(el, binding) {
+    const { tabIndex = 0, firstFocusableSelector = '', lastFocusableSelector = '' } = binding.value || {};
+
+    const createFocusableElement = (onFocus) => {
+        const element = document.createElement('span');
+
+        element.classList = 'p-hidden-accessible p-hidden-focusable';
+        element.tabIndex = tabIndex;
+        element.setAttribute('aria-hidden', 'true');
+        element.setAttribute('role', 'presentation');
+        element.addEventListener('focus', onFocus);
+
+        return element;
+    };
+
+    const firstFocusableElement = createFocusableElement(onFirstHiddenElementFocus);
+    const lastFocusableElement = createFocusableElement(onLastHiddenElementFocus);
+
+    firstFocusableElement.$_pfocustrap_lasthiddenfocusableelement = lastFocusableElement;
+    firstFocusableElement.$_pfocustrap_focusableselector = firstFocusableSelector;
+
+    lastFocusableElement.$_pfocustrap_firsthiddenfocusableelement = firstFocusableElement;
+    lastFocusableElement.$_pfocustrap_focusableselector = lastFocusableSelector;
+
+    el.prepend(firstFocusableElement);
+    el.append(lastFocusableElement);
 }
 
 const FocusTrap = {
-    mounted(el, binding, vnode) {
-        const firstFocusableEl = DomHandler.getFirstFocusableElement(el, ':not(.p-hidden-focusable)');
+    mounted(el, binding) {
+        const { disabled } = binding.value || {};
 
-        if (firstFocusableEl) {
-            el.$_pfocustrapFocusTrapDisabled = false;
-
-            if (binding.value && typeof binding.value === 'object') {
-                el.$_pfocustrapFocusTrapDisabled = binding.value.focusTrapDisabled;
-            }
-
-            if (!el.$_pfocustrapFocusTrapDisabled) {
-                element = el;
-                createHiddenElements(el);
-                bind(el, vnode);
-            }
+        if (!disabled) {
+            createHiddenFocusableElements(el, binding);
+            bind(el, binding);
+            autoFocus(el, binding);
         }
     },
+    updated(el, binding) {
+        const { disabled } = binding.value || {};
+
+        disabled && unbind(el);
+    },
     unmounted(el) {
-        element = null;
-        firstVNode = null;
-        lastVNode = null;
-        shiftKey = false;
         unbind(el);
     }
 };

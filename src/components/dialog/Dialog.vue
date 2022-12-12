@@ -2,16 +2,16 @@
     <Portal :appendTo="appendTo">
         <div v-if="containerVisible" :ref="maskRef" :class="maskClass" @click="onMaskClick">
             <transition name="p-dialog" @before-enter="onBeforeEnter" @enter="onEnter" @before-leave="onBeforeLeave" @leave="onLeave" @after-leave="onAfterLeave" appear>
-                <div v-if="visible" :ref="containerRef" v-focustrap="{ focusTrapDisabled: !modal }" :class="dialogClass" role="dialog" :aria-labelledby="ariaLabelledById" :aria-modal="modal" v-bind="$attrs">
+                <div v-if="visible" :ref="containerRef" v-focustrap="{ disabled: !modal }" :class="dialogClass" role="dialog" :aria-labelledby="ariaLabelledById" :aria-modal="modal" v-bind="$attrs">
                     <div v-if="showHeader" :ref="headerContainerRef" class="p-dialog-header" @mousedown="initDrag">
                         <slot name="header">
                             <span v-if="header" :id="ariaLabelledById" class="p-dialog-title">{{ header }}</span>
                         </slot>
                         <div class="p-dialog-header-icons">
-                            <button v-if="maximizable" :ref="maximizableRef" v-ripple autofocus class="p-dialog-header-icon p-dialog-header-maximize p-link" @click="maximize" type="button" :tabindex="maximizable ? '0' : '-1'">
+                            <button v-if="maximizable" :ref="maximizableRef" v-ripple :autofocus="focusable" class="p-dialog-header-icon p-dialog-header-maximize p-link" @click="maximize" type="button" :tabindex="maximizable ? '0' : '-1'">
                                 <span :class="maximizeIconClass"></span>
                             </button>
-                            <button v-if="closable" :ref="closeButtonRef" v-ripple autofocus class="p-dialog-header-icon p-dialog-header-close p-link" @click="close" :aria-label="closeAriaLabel" type="button" v-bind="closeButtonProps">
+                            <button v-if="closable" :ref="closeButtonRef" v-ripple :autofocus="focusable" class="p-dialog-header-icon p-dialog-header-close p-link" @click="close" :aria-label="closeAriaLabel" type="button" v-bind="closeButtonProps">
                                 <span :class="['p-dialog-header-close-icon', closeIcon]"></span>
                             </button>
                         </div>
@@ -154,7 +154,8 @@ export default {
     data() {
         return {
             containerVisible: this.visible,
-            maximized: false
+            maximized: false,
+            focusable: false
         };
     },
     documentKeydownListener: null,
@@ -217,6 +218,7 @@ export default {
         },
         onLeave() {
             this.$emit('hide');
+            this.focusable = false;
         },
         onAfterLeave() {
             if (this.autoZIndex) {
@@ -238,13 +240,13 @@ export default {
                 return container.querySelector('[autofocus]');
             };
 
-            let focusTarget = this.$slots.default && findFocusableElement(this.content);
+            let focusTarget = this.$slots.footer && findFocusableElement(this.footerContainer);
 
             if (!focusTarget) {
                 focusTarget = this.$slots.header && findFocusableElement(this.headerContainer);
 
                 if (!focusTarget) {
-                    focusTarget = this.$slots.footer && findFocusableElement(this.footerContainer);
+                    focusTarget = this.$slots.default && findFocusableElement(this.content);
 
                     if (!focusTarget) {
                         focusTarget = findFocusableElement(this.container);
@@ -252,7 +254,10 @@ export default {
                 }
             }
 
-            focusTarget && focusTarget.focus();
+            if (focusTarget) {
+                this.focusable = true;
+                focusTarget.focus();
+            }
         },
         maximize(event) {
             if (this.maximized) {

@@ -29,11 +29,11 @@
                         {{ label || 'empty' }}
                     </template>
                     <template v-else-if="display === 'chip'">
-                        <div v-for="item of modelValue" :key="getLabelByValue(item)" class="p-multiselect-token">
+                        <div v-for="item of chipSelectedItems" :key="getLabelByValue(item)" class="p-multiselect-token">
                             <slot name="chip" :value="item">
                                 <span class="p-multiselect-token-label">{{ getLabelByValue(item) }}</span>
                             </slot>
-                            <span v-if="!disabled" :class="['p-multiselect-token-icon', removeTokenIcon]" @click="removeOption($event, item)"></span>
+                            <span v-if="!disabled" :class="['p-multiselect-token-icon', removeTokenIcon]" @click.stop="removeOption($event, item)"></span>
                         </div>
                         <template v-if="!modelValue || modelValue.length === 0">{{ placeholder || 'empty' }}</template>
                     </template>
@@ -125,12 +125,6 @@
                                         <slot name="empty">{{ emptyMessageText }}</slot>
                                     </li>
                                 </ul>
-                                <span v-if="!options || (options && options.length === 0)" role="status" aria-live="polite" class="p-hidden-accessible">
-                                    {{ emptyMessageText }}
-                                </span>
-                                <span role="status" aria-live="polite" class="p-hidden-accessible">
-                                    {{ selectedMessageText }}
-                                </span>
                             </template>
                             <template v-if="$slots.loader" v-slot:loader="{ options }">
                                 <slot name="loader" :options="options"></slot>
@@ -138,6 +132,12 @@
                         </VirtualScroller>
                     </div>
                     <slot name="footer" :value="modelValue" :options="visibleOptions"></slot>
+                    <span v-if="!options || (options && options.length === 0)" role="status" aria-live="polite" class="p-hidden-accessible">
+                        {{ emptyMessageText }}
+                    </span>
+                    <span role="status" aria-live="polite" class="p-hidden-accessible">
+                        {{ selectedMessageText }}
+                    </span>
                     <span ref="lastHiddenFocusableElementOnOverlay" role="presentation" aria-hidden="true" class="p-hidden-accessible p-hidden-focusable" :tabindex="0" @focus="onLastHiddenFocus"></span>
                 </div>
             </transition>
@@ -397,13 +397,19 @@ export default {
             isFocus && DomHandler.focus(this.$refs.focusInput);
         },
         hide(isFocus) {
-            this.$emit('before-hide');
-            this.overlayVisible = false;
-            this.focusedOptionIndex = -1;
-            this.searchValue = '';
+            const _hide = () => {
+                this.$emit('before-hide');
+                this.overlayVisible = false;
+                this.focusedOptionIndex = -1;
+                this.searchValue = '';
 
-            this.resetFilterOnHide && (this.filterValue = null);
-            isFocus && DomHandler.focus(this.$refs.focusInput);
+                this.resetFilterOnHide && (this.filterValue = null);
+                isFocus && DomHandler.focus(this.$refs.focusInput);
+            };
+
+            setTimeout(() => {
+                _hide();
+            }, 0); // For ScreenReaders
         },
         onFocus(event) {
             this.focused = true;
@@ -492,18 +498,14 @@ export default {
             }
         },
         onFirstHiddenFocus(event) {
-            const relatedTarget = event.relatedTarget;
+            const focusableEl = event.relatedTarget === this.$refs.focusInput ? DomHandler.getFirstFocusableElement(this.overlay, ':not(.p-hidden-focusable)') : this.$refs.focusInput;
 
-            if (relatedTarget === this.$refs.focusInput) {
-                const firstFocusableEl = DomHandler.getFirstFocusableElement(this.overlay, ':not(.p-hidden-focusable)');
-
-                DomHandler.focus(firstFocusableEl);
-            } else {
-                DomHandler.focus(this.$refs.focusInput);
-            }
+            DomHandler.focus(focusableEl);
         },
-        onLastHiddenFocus() {
-            DomHandler.focus(this.$refs.firstHiddenFocusableElementOnOverlay);
+        onLastHiddenFocus(event) {
+            const focusableEl = event.relatedTarget === this.$refs.focusInput ? DomHandler.getLastFocusableElement(this.overlay, ':not(.p-hidden-focusable)') : this.$refs.focusInput;
+
+            DomHandler.focus(focusableEl);
         },
         onCloseClick() {
             this.hide(true);
@@ -725,7 +727,7 @@ export default {
         onTabKey(event, pressedInInputText = false) {
             if (!pressedInInputText) {
                 if (this.overlayVisible && this.hasFocusableElements()) {
-                    DomHandler.focus(this.$refs.firstHiddenFocusableElementOnOverlay);
+                    DomHandler.focus(event.shiftKey ? this.$refs.lastHiddenFocusableElementOnOverlay : this.$refs.firstHiddenFocusableElementOnOverlay);
 
                     event.preventDefault();
                 } else {
@@ -845,7 +847,7 @@ export default {
             if (this.selectAll !== null) {
                 this.$emit('selectall-change', { originalEvent: event, checked: !this.allSelected });
             } else {
-                const value = this.allSelected ? [] : this.visibleOptions.filter((option) => !this.isOptionDisabled(option) && !this.isOptionGroup(option)).map((option) => this.getOptionValue(option));
+                const value = this.allSelected ? [] : this.visibleOptions.filter((option) => this.isValidOption(option)).map((option) => this.getOptionValue(option));
 
                 this.updateModel(event, value);
             }
@@ -947,9 +949,7 @@ export default {
             }
 
             if (optionIndex === -1 && this.focusedOptionIndex === -1) {
-                const selectedIndex = this.findSelectedOptionIndex();
-
-                optionIndex = selectedIndex < 0 ? this.findFirstOptionIndex() : selectedIndex;
+                optionIndex = this.findFirstFocusedOptionIndex();
             }
 
             if (optionIndex !== -1) {
@@ -1108,10 +1108,11 @@ export default {
 
             return label;
         },
+        chipSelectedItems() {
+            return ObjectUtils.isNotEmpty(this.maxSelectedLabels) && this.modelValue && this.modelValue.length > this.maxSelectedLabels ? this.modelValue.slice(0, this.maxSelectedLabels) : this.modelValue;
+        },
         allSelected() {
-            return this.selectAll !== null
-                ? this.selectAll
-                : ObjectUtils.isNotEmpty(this.visibleOptions) && this.visibleOptions.filter((option) => !this.isOptionDisabled(option)).every((option) => this.isOptionGroup(option) || this.isValidSelectedOption(option));
+            return this.selectAll !== null ? this.selectAll : ObjectUtils.isNotEmpty(this.visibleOptions) && this.visibleOptions.every((option) => this.isOptionGroup(option) || this.isOptionDisabled(option) || this.isSelected(option));
         },
         hasSelectedOption() {
             return ObjectUtils.isNotEmpty(this.modelValue);

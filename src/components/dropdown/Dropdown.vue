@@ -115,12 +115,6 @@
                                         <slot name="empty">{{ emptyMessageText }}</slot>
                                     </li>
                                 </ul>
-                                <span v-if="!options || (options && options.length === 0)" role="status" aria-live="polite" class="p-hidden-accessible">
-                                    {{ emptyMessageText }}
-                                </span>
-                                <span role="status" aria-live="polite" class="p-hidden-accessible">
-                                    {{ selectedMessageText }}
-                                </span>
                             </template>
                             <template v-if="$slots.loader" v-slot:loader="{ options }">
                                 <slot name="loader" :options="options"></slot>
@@ -128,6 +122,12 @@
                         </VirtualScroller>
                     </div>
                     <slot name="footer" :value="modelValue" :options="visibleOptions"></slot>
+                    <span v-if="!options || (options && options.length === 0)" role="status" aria-live="polite" class="p-hidden-accessible">
+                        {{ emptyMessageText }}
+                    </span>
+                    <span role="status" aria-live="polite" class="p-hidden-accessible">
+                        {{ selectedMessageText }}
+                    </span>
                     <span ref="lastHiddenFocusableElementOnOverlay" role="presentation" aria-hidden="true" class="p-hidden-accessible p-hidden-focusable" :tabindex="0" @focus="onLastHiddenFocus"></span>
                 </div>
             </transition>
@@ -446,6 +446,7 @@ export default {
                     break;
 
                 case 'Enter':
+                case 'NumpadEnter':
                     this.onEnterKey(event);
                     break;
 
@@ -500,18 +501,14 @@ export default {
             this.updateModel(event, null);
         },
         onFirstHiddenFocus(event) {
-            const relatedTarget = event.relatedTarget;
+            const focusableEl = event.relatedTarget === this.$refs.focusInput ? DomHandler.getFirstFocusableElement(this.overlay, ':not(.p-hidden-focusable)') : this.$refs.focusInput;
 
-            if (relatedTarget === this.$refs.focusInput) {
-                const firstFocusableEl = DomHandler.getFirstFocusableElement(this.overlay, ':not(.p-hidden-focusable)');
-
-                DomHandler.focus(firstFocusableEl);
-            } else {
-                DomHandler.focus(this.$refs.focusInput);
-            }
+            DomHandler.focus(focusableEl);
         },
-        onLastHiddenFocus() {
-            DomHandler.focus(this.$refs.firstHiddenFocusableElementOnOverlay);
+        onLastHiddenFocus(event) {
+            const focusableEl = event.relatedTarget === this.$refs.focusInput ? DomHandler.getLastFocusableElement(this.overlay, ':not(.p-hidden-focusable)') : this.$refs.focusInput;
+
+            DomHandler.focus(focusableEl);
         },
         onOptionSelect(event, option, isHide = true) {
             const value = this.getOptionValue(option);

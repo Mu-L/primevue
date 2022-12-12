@@ -2191,6 +2191,16 @@
   font-size: 1.3rem;
 }
 
+.p-speeddial-list {
+  outline: 0 none;
+}
+
+.p-speeddial-item.p-focus > .p-speeddial-action {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: 0 0 0 0.2rem #c2e9d8;
+}
+
 .p-speeddial-action {
   width: 3rem;
   height: 3rem;
@@ -3248,6 +3258,7 @@
   padding: 0;
   border-bottom-right-radius: 3px;
   border-bottom-left-radius: 3px;
+  outline: 0 none;
 }
 .p-orderlist .p-orderlist-list .p-orderlist-item {
   padding: 0.429rem 0.857rem;
@@ -3266,11 +3277,11 @@
   background: #d6d6d6;
 }
 .p-orderlist .p-orderlist-list .p-orderlist-item.p-highlight {
-  color: #333333;
-  background: #eaeaea;
+  color: #ffffff;
+  background: #41b883;
 }
 .p-orderlist .p-orderlist-list .p-orderlist-item.p-highlight.p-focus {
-  background: #eaeaea;
+  background: #41b883;
 }
 .p-orderlist.p-orderlist-striped .p-orderlist-list .p-orderlist-item:nth-child(even) {
   background: #f9f9f9;
@@ -3423,6 +3434,7 @@
   padding: 0;
   border-bottom-right-radius: 3px;
   border-bottom-left-radius: 3px;
+  outline: 0 none;
 }
 .p-picklist .p-picklist-list .p-picklist-item {
   padding: 0.429rem 0.857rem;
@@ -3436,13 +3448,15 @@
   background: #eaeaea;
   color: #333333;
 }
-.p-picklist .p-picklist-list .p-picklist-item:focus {
-  outline: 0 none;
-  outline-offset: 0;
-  box-shadow: inset 0 0 0 0.15rem #c2e9d8;
+.p-picklist .p-picklist-list .p-picklist-item.p-focus {
+  color: #333333;
+  background: #d6d6d6;
 }
 .p-picklist .p-picklist-list .p-picklist-item.p-highlight {
   color: #ffffff;
+  background: #41b883;
+}
+.p-picklist .p-picklist-list .p-picklist-item.p-highlight.p-focus {
   background: #41b883;
 }
 .p-picklist.p-picklist-striped .p-picklist-list .p-picklist-item:nth-child(even) {
@@ -3486,6 +3500,12 @@
 }
 .p-tree .p-tree-container .p-treenode {
   padding: 0.143rem;
+  outline: 0 none;
+}
+.p-tree .p-tree-container .p-treenode:focus > .p-treenode-content {
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: inset 0 0 0 0.15rem #c2e9d8;
 }
 .p-tree .p-tree-container .p-treenode .p-treenode-content {
   border-radius: 3px;
@@ -3521,11 +3541,6 @@
 }
 .p-tree .p-tree-container .p-treenode .p-treenode-content .p-checkbox .p-indeterminate .p-checkbox-icon {
   color: #333333;
-}
-.p-tree .p-tree-container .p-treenode .p-treenode-content:focus {
-  outline: 0 none;
-  outline-offset: 0;
-  box-shadow: inset 0 0 0 0.15rem #c2e9d8;
 }
 .p-tree .p-tree-container .p-treenode .p-treenode-content.p-highlight {
   background: #41b883;
@@ -4043,6 +4058,7 @@
   border: 1px solid #c8c8c8;
   padding: 0.857rem 1rem;
   border-radius: 3px;
+  gap: 0.5rem;
 }
 .p-toolbar .p-toolbar-separator {
   margin: 0 0.5rem;

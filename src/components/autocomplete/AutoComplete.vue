@@ -84,7 +84,7 @@
             </li>
         </ul>
         <i v-if="searching" :class="loadingIconClass" aria-hidden="true"></i>
-        <Button v-if="dropdown" ref="dropdownButton" type="button" :icon="dropdownIcon" class="p-autocomplete-dropdown" tabindex="-1" :disabled="disabled" aria-hidden="true" @click="onDropdownClick" />
+        <Button v-if="dropdown" ref="dropdownButton" type="button" :icon="dropdownIcon" :class="['p-autocomplete-dropdown', dropdownClass]" tabindex="-1" :disabled="disabled" aria-hidden="true" @click="onDropdownClick" />
         <span role="status" aria-live="polite" class="p-hidden-accessible">
             {{ searchResultMessageText }}
         </span>
@@ -120,15 +120,15 @@
                                     </li>
                                 </template>
                             </ul>
-                            <span role="status" aria-live="polite" class="p-hidden-accessible">
-                                {{ selectedMessageText }}
-                            </span>
                         </template>
                         <template v-if="$slots.loader" v-slot:loader="{ options }">
                             <slot name="loader" :options="options"></slot>
                         </template>
                     </VirtualScroller>
                     <slot name="footer" :value="modelValue" :suggestions="visibleOptions"></slot>
+                    <span role="status" aria-live="polite" class="p-hidden-accessible">
+                        {{ selectedMessageText }}
+                    </span>
                 </div>
             </transition>
         </Portal>
@@ -245,6 +245,10 @@ export default {
         dropdownIcon: {
             type: String,
             default: 'pi pi-chevron-down'
+        },
+        dropdownClass: {
+            type: String,
+            default: null
         },
         loadingIcon: {
             type: String,
@@ -506,7 +510,7 @@ export default {
                 let valid = false;
 
                 if (this.visibleOptions) {
-                    const matchedValue = this.visibleOptions.find((option) => this.isOptionMatched(option, event.target.value));
+                    const matchedValue = this.visibleOptions.find((option) => this.isOptionMatched(option, this.$refs.focusInput.value || ''));
 
                     if (matchedValue !== undefined) {
                         valid = true;

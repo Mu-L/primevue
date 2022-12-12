@@ -152,13 +152,14 @@ export default {
             return processedItem && ObjectUtils.isNotEmpty(processedItem.items);
         },
         toggle(event) {
-            this.visible ? this.hide(event) : this.show(event);
+            this.visible ? this.hide(event, true) : this.show(event);
         },
         show(event, isFocus) {
             if (this.popup) {
                 this.$emit('before-show');
                 this.visible = true;
                 this.target = this.target || event.currentTarget;
+                this.relatedTarget = event.relatedTarget || null;
             }
 
             this.focusedItemInfo = { index: this.findFirstFocusedItemIndex(), level: 0, parentKey: '' };
@@ -174,7 +175,7 @@ export default {
             this.activeItemPath = [];
             this.focusedItemInfo = { index: -1, level: 0, parentKey: '' };
 
-            isFocus && DomHandler.focus(this.target || this.menubar);
+            isFocus && DomHandler.focus(this.relatedTarget || this.target || this.menubar);
             this.dirty = false;
         },
         onFocus(event) {
@@ -295,7 +296,16 @@ export default {
                 this.dirty = !root;
                 DomHandler.focus(this.menubar);
             } else {
-                grouped ? this.onItemChange(event) : this.hide(originalEvent, !root);
+                if (grouped) {
+                    this.onItemChange(event);
+                } else {
+                    const rootProcessedItem = root ? processedItem : this.activeItemPath.find((p) => p.parentKey === '');
+
+                    this.hide(originalEvent);
+                    this.changeFocusedItemIndex(originalEvent, rootProcessedItem ? rootProcessedItem.index : -1);
+
+                    DomHandler.focus(this.menubar);
+                }
             }
         },
         onItemMouseEnter(event) {

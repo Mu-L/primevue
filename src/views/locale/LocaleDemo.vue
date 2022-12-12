@@ -147,6 +147,10 @@ locale: {
         moveUp: 'Move Up',
         moveDown: 'Move Down',
         moveBottom: 'Move Bottom',
+        moveToTarget: 'Move to Target',
+        moveToSource: 'Move to Source',
+        moveAllToTarget: 'Move All to Target',
+        moveAllToSource: 'Move All to Source',
         pageLabel: '{page}',
         firstPageLabel: 'First Page',
         lastPageLabel: 'Last Page',
@@ -166,7 +170,16 @@ locale: {
         filterConstraint: 'Filter Constraint',
         editRow: 'Row Edit',
         saveEdit: 'Save Edit',
-        cancelEdit: 'Cancel Edit'
+        cancelEdit: 'Cancel Edit',
+        listView: 'List View',
+        gridView: 'Grid View',
+        slide: 'Slide',
+        slideNumber: '{slideNumber}',
+        zoomImage: 'Zoom Image',
+        zoomIn: 'Zoom In',
+        zoomOut: 'Zoom Out',
+        rotateRight: 'Rotate Right',
+        rotateLeft: 'Rotate Left'
     }
 }
 
